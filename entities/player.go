@@ -62,3 +62,12 @@ func (p *Player) Update() {
 func (p *Player) Draw() {
 	rl.DrawRectangleV(p.Pos, rl.NewVector2(p.Size, p.Size), rl.Red)
 }
+
+func (e *Player) Rect() rl.Rectangle {
+	return rl.Rectangle{
+		X:      e.Pos.X,
+		Y:      e.Pos.Y,
+		Width:  e.Size,
+		Height: e.Size,
+	}
+}
