@@ -79,36 +79,23 @@ func (g *Game) Update() {
 			g.Projectiles[i].Update()
 		}
 	}
-
-	// Damage enemies
-	for i := range g.Projectiles {
-		p := &g.Projectiles[i]
-
-		if !(*p).Active {
-			continue
-		}
-
-		for e := range g.Room.Enemies {
-			enemy := &g.Room.Enemies[e]
-
-			if (*enemy).HP <= 0 {
-				continue
-			}
-
-			if rl.CheckCollisionRecs(
-				(*p).Rect(), (*enemy).Rect(),
-			) {
-				(*enemy).HP -= (*p).Damage
-				(*p).Active = false
-
-				break
-			}
-		}
-	}
+	g.UpdateProjectiles()
 
 	g.Room.RemoveDeadEnemies()
+	g.RemoveInactiveProjectiles()
+}
 
-	// Remove inactive projectiles
+func (g *Game) Draw() {
+	g.Room.Draw()
+	g.Player.Draw()
+	drawPlayerHealth(g.Player)
+
+	for _, pr := range g.Projectiles {
+		pr.Draw()
+	}
+}
+
+func (g *Game) RemoveInactiveProjectiles() {
 	var active []*entities.Projectile
 	for _, p := range g.Projectiles {
 		if p.Active {
@@ -116,14 +103,51 @@ func (g *Game) Update() {
 		}
 	}
 	g.Projectiles = active
-
 }
 
-func (g *Game) Draw() {
-	g.Room.Draw()
-	g.Player.Draw()
+func (g *Game) UpdateProjectiles() {
+	for i := range g.Projectiles {
+		p := &g.Projectiles[i]
 
-	for _, pr := range g.Projectiles {
-		pr.Draw()
+		if !(*p).Active {
+			continue
+		}
+
+		g.handleCollision(*p)
 	}
+}
+
+func (g *Game) handleCollision(p *entities.Projectile) {
+	for i := range g.Room.Enemies {
+		enemy := &g.Room.Enemies[i]
+
+		if (*enemy).HP <= 0 {
+			continue
+		}
+
+		if !rl.CheckCollisionRecs(p.Rect(), (*enemy).Rect()) {
+			continue
+		}
+
+		applyDamage(*enemy, p)
+		break // projectile hits only one enemy
+	}
+}
+
+func applyDamage(enemy *entities.Enemy, p *entities.Projectile) {
+	enemy.HP -= p.Damage
+	p.Active = false
+}
+
+func drawPlayerHealth(p *entities.Player) {
+	barWidth := float32(200)
+	barHeight := float32(20)
+
+	x := float32(20)
+	y := float32(20)
+
+	pct := float32(p.HP) / float32(p.MaxHP)
+
+	rl.DrawRectangle(int32(x), int32(y), int32(barWidth), int32(barHeight), rl.DarkGray)
+	rl.DrawRectangle(int32(x), int32(y), int32(barWidth*pct), int32(barHeight), rl.Green)
 }
