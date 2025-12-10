@@ -27,6 +27,41 @@ func (g *Game) Update() {
 	g.Player.Update()
 	g.Room.Update(g.Player)
 
+	pRect := g.Player.Rect()
+
+	for _, e := range g.Room.Enemies {
+		correctionX, correctionY := entities.ResolveCollision(pRect, e.Rect())
+		if correctionX != 0 || correctionY != 0 {
+			g.Player.Pos.X += correctionX
+			g.Player.Pos.Y += correctionY
+			pRect = g.Player.Rect()
+		}
+	}
+
+	for _, e := range g.Room.Enemies {
+		e.Update(g.Player)
+
+		// Now resolve enemy vs player collision
+		rect := e.Rect()
+		cx, cy := entities.ResolveCollision(rect, g.Player.Rect())
+		if cx != 0 || cy != 0 {
+			e.Pos.X += cx
+			e.Pos.Y += cy
+		}
+
+		// Resolve enemy vs enemy
+		for _, o := range g.Room.Enemies {
+			if e == o {
+				continue
+			}
+			cx, cy := entities.ResolveCollision(rect, o.Rect())
+			if cx != 0 || cy != 0 {
+				e.Pos.X += cx
+				e.Pos.Y += cy
+			}
+		}
+	}
+
 	fireCooldown -= rl.GetFrameTime()
 
 	dir := rl.Vector2{X: 0, Y: 0}
